@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('formLogin').addEventListener('submit', fazerLogin);
   document.getElementById('btnLogout').addEventListener('click', fazerLogout);
   document.getElementById('formNovoChamado').addEventListener('submit', criarChamado);
+  document.getElementById('formCriarUsuario').addEventListener('submit', criarUsuario);
+  document.getElementById('formAlterarSenha').addEventListener('submit', alterarSenha);
 });
 
 // ============ AUTENTICAÇÃO ============
@@ -76,6 +78,9 @@ function mostrarDashboard() {
   document.getElementById('telalogin').style.display = 'none';
   document.getElementById('teladashboard').style.display = 'flex';
   document.getElementById('nomeUsuario').textContent = usuarioLogado.nome;
+
+  const menuAdmin = document.getElementById('menuGerenciarUsuarios');
+  menuAdmin.style.display = usuarioLogado.role === 'admin' ? 'block' : 'none';
 }
 
 function mostrarSecao(secao) {
@@ -89,6 +94,11 @@ function mostrarSecao(secao) {
     carregarChamados();
   } else if (secao === 'dashboard') {
     carregarDados();
+  } else if (secao === 'gerenciar-usuarios') {
+    carregarUsuarios();
+  } else if (secao === 'alterar-senha') {
+    document.getElementById('formAlterarSenha').reset();
+    document.getElementById('msgAlterarSenha').style.display = 'none';
   } else if (secao === 'relatorio') {
     const dataFim = new Date();
     const dataInicio = new Date(dataFim.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -358,6 +368,176 @@ function renderizarEstatisticas(dados) {
   `;
 
   document.getElementById('relatorioConteudo').insertAdjacentHTML('beforeend', html);
+}
+
+// ============ GERENCIAR USUÁRIOS ============
+async function carregarUsuarios() {
+  try {
+    const usuarios = await fazerRequisicao('/usuarios');
+    renderizarUsuarios(usuarios);
+  } catch (erro) {
+    console.error('Erro ao carregar usuários:', erro);
+    document.getElementById('listaUsuarios').innerHTML = '<p style="color: red;">Erro ao carregar usuários.</p>';
+  }
+}
+
+function renderizarUsuarios(usuarios) {
+  const lista = document.getElementById('listaUsuarios');
+
+  if (usuarios.length === 0) {
+    lista.innerHTML = '<p style="color: #999;">Nenhum usuário encontrado.</p>';
+    return;
+  }
+
+  lista.innerHTML = `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background-color: var(--primary); color: white;">
+          <th style="padding:0.75rem; text-align:left; border:1px solid #ddd;">Nome</th>
+          <th style="padding:0.75rem; text-align:left; border:1px solid #ddd;">Usuário</th>
+          <th style="padding:0.75rem; text-align:left; border:1px solid #ddd;">Email</th>
+          <th style="padding:0.75rem; text-align:center; border:1px solid #ddd;">Perfil</th>
+          <th style="padding:0.75rem; text-align:center; border:1px solid #ddd;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${usuarios.map(u => `
+          <tr>
+            <td style="padding:0.75rem; border:1px solid #ddd;">${u.nome}</td>
+            <td style="padding:0.75rem; border:1px solid #ddd;">${u.usuario}</td>
+            <td style="padding:0.75rem; border:1px solid #ddd;">${u.email || '-'}</td>
+            <td style="padding:0.75rem; text-align:center; border:1px solid #ddd;">
+              <span style="padding:0.25rem 0.6rem; border-radius:4px; font-size:0.8rem; font-weight:bold;
+                background:${u.role === 'admin' ? '#003d7a' : '#27ae60'}; color:white;">
+                ${u.role === 'admin' ? 'Admin' : 'Usuário'}
+              </span>
+            </td>
+            <td style="padding:0.75rem; text-align:center; border:1px solid #ddd;">
+              ${u.id !== usuarioLogado.id ? `
+                <button class="btn btn-deletar" style="font-size:0.8rem; padding:0.3rem 0.7rem;"
+                  onclick="deletarUsuario(${u.id}, '${u.usuario}')">Deletar</button>
+              ` : '<span style="color:#999; font-size:0.8rem;">Você</span>'}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function criarUsuario(e) {
+  e.preventDefault();
+
+  const nome = document.getElementById('novoNome').value.trim();
+  const usuario = document.getElementById('novoUsuario').value.trim();
+  const email = document.getElementById('novoEmail').value.trim();
+  const role = document.getElementById('novoRole').value;
+  const senha = document.getElementById('novaSenhaUsuario').value;
+  const confirmar = document.getElementById('confirmarSenhaUsuario').value;
+  const msg = document.getElementById('msgCriarUsuario');
+
+  msg.style.display = 'none';
+
+  if (senha !== confirmar) {
+    msg.textContent = 'As senhas não coincidem.';
+    msg.className = 'erro';
+    msg.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/usuarios`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ nome, usuario, email, role, senha })
+    });
+
+    const dados = await response.json();
+
+    if (!response.ok) {
+      msg.textContent = dados.erro || 'Erro ao criar usuário.';
+      msg.className = 'erro';
+      msg.style.display = 'block';
+      return;
+    }
+
+    msg.textContent = `Usuário "${usuario}" criado com sucesso!`;
+    msg.className = 'sucesso';
+    msg.style.display = 'block';
+    document.getElementById('formCriarUsuario').reset();
+    carregarUsuarios();
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  } catch (erro) {
+    msg.textContent = 'Erro de conexão com o servidor.';
+    msg.className = 'erro';
+    msg.style.display = 'block';
+    console.error(erro);
+  }
+}
+
+async function deletarUsuario(id, nomeUsuario) {
+  if (!confirm(`Tem certeza que deseja deletar o usuário "${nomeUsuario}"?`)) return;
+
+  try {
+    await fazerRequisicao(`/usuarios/${id}`, { method: 'DELETE' });
+    carregarUsuarios();
+  } catch (erro) {
+    alert('Erro ao deletar usuário.');
+    console.error(erro);
+  }
+}
+
+// ============ ALTERAR SENHA ============
+async function alterarSenha(e) {
+  e.preventDefault();
+
+  const senhaAtual = document.getElementById('senhaAtual').value;
+  const novaSenha = document.getElementById('novaSenha').value;
+  const confirmar = document.getElementById('confirmarNovaSenha').value;
+  const msg = document.getElementById('msgAlterarSenha');
+
+  msg.style.display = 'none';
+
+  if (novaSenha !== confirmar) {
+    msg.textContent = 'A nova senha e a confirmação não coincidem.';
+    msg.className = 'erro';
+    msg.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/usuarios/senha`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ senhaAtual, novaSenha })
+    });
+
+    const dados = await response.json();
+
+    if (!response.ok) {
+      msg.textContent = dados.erro || 'Erro ao alterar senha.';
+      msg.className = 'erro';
+      msg.style.display = 'block';
+      return;
+    }
+
+    msg.textContent = 'Senha alterada com sucesso!';
+    msg.className = 'sucesso';
+    msg.style.display = 'block';
+    document.getElementById('formAlterarSenha').reset();
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  } catch (erro) {
+    msg.textContent = 'Erro de conexão com o servidor.';
+    msg.className = 'erro';
+    msg.style.display = 'block';
+    console.error(erro);
+  }
 }
 
 // ============ FUNÇÕES AUXILIARES ============

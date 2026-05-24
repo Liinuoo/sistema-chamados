@@ -75,6 +75,8 @@
       <button class="menu-item" onclick="mostrarSecao('novo-chamado')">➕ Novo Chamado</button>
       <button class="menu-item" onclick="mostrarSecao('meus-chamados')">📋 Meus Chamados</button>
       <button class="menu-item" onclick="mostrarSecao('relatorio')">📊 Relatório</button>
+      <button class="menu-item" id="menuGerenciarUsuarios" onclick="mostrarSecao('gerenciar-usuarios')" style="display:none;">👥 Usuários</button>
+      <button class="menu-item" onclick="mostrarSecao('alterar-senha')">🔑 Alterar Senha</button>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -221,6 +223,81 @@
         </div>
 
         <div id="listaChamados" class="chamados-lista"></div>
+      </section>
+
+      <!-- GERENCIAR USUÁRIOS (admin only) -->
+      <section id="gerenciar-usuarios" class="secao">
+        <h2>Gerenciar Usuários</h2>
+
+        <div class="formulario" style="margin-bottom: 1.5rem;">
+          <h3>Criar Novo Usuário</h3>
+          <form id="formCriarUsuario">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="novoNome">Nome Completo *</label>
+                <input type="text" id="novoNome" placeholder="Nome completo" required>
+              </div>
+              <div class="form-group">
+                <label for="novoUsuario">Usuário *</label>
+                <input type="text" id="novoUsuario" placeholder="Nome de usuário (sem espaços)" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="novoEmail">Email</label>
+                <input type="email" id="novoEmail" placeholder="email@exemplo.com">
+              </div>
+              <div class="form-group">
+                <label for="novoRole">Perfil *</label>
+                <select id="novoRole">
+                  <option value="user">Usuário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="novaSenhaUsuario">Senha *</label>
+                <input type="password" id="novaSenhaUsuario" placeholder="Mínimo 6 caracteres" required>
+              </div>
+              <div class="form-group">
+                <label for="confirmarSenhaUsuario">Confirmar Senha *</label>
+                <input type="password" id="confirmarSenhaUsuario" placeholder="Repita a senha" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Criar Usuário</button>
+          </form>
+          <div id="msgCriarUsuario" style="display:none; margin-top: 1rem;"></div>
+        </div>
+
+        <div class="formulario">
+          <h3>Usuários Cadastrados</h3>
+          <div id="listaUsuarios" style="margin-top: 1rem;"></div>
+        </div>
+      </section>
+
+      <!-- ALTERAR SENHA -->
+      <section id="alterar-senha" class="secao">
+        <h2>Alterar Senha</h2>
+
+        <div class="formulario" style="max-width: 500px;">
+          <form id="formAlterarSenha">
+            <div class="form-group">
+              <label for="senhaAtual">Senha Atual *</label>
+              <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
+            </div>
+            <div class="form-group">
+              <label for="novaSenha">Nova Senha *</label>
+              <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmarNovaSenha">Confirmar Nova Senha *</label>
+              <input type="password" id="confirmarNovaSenha" placeholder="Repita a nova senha" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Alterar Senha</button>
+          </form>
+          <div id="msgAlterarSenha" style="display:none; margin-top: 1rem;"></div>
+        </div>
       </section>
 
       <!-- RELATÓRIO -->

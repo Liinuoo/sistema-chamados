@@ -11,6 +11,7 @@ CREATE TABLE usuarios (
   senha VARCHAR(255) NOT NULL,
   nome VARCHAR(100) NOT NULL,
   email VARCHAR(100),
+  role VARCHAR(20) NOT NULL DEFAULT 'user',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,5 +40,11 @@ CREATE INDEX idx_chamados_categoria ON chamados(categoria);
 CREATE INDEX idx_chamados_data_abertura ON chamados(data_abertura);
 
 -- Usuário padrão (senha: admin123)
-INSERT INTO usuarios (usuario, senha, nome, email) 
-VALUES ('admin', '$2a$10$H5T.j9XpkP0R0/dDK3xpwOFrDJyHxE1K7H5T.j9XpkP0R0/dDK3xpw', 'Administrador', 'admin@implanta.com');
+-- Para gerar um novo hash: node gerar-senha.js "suasenha"
+INSERT INTO usuarios (usuario, senha, nome, email, role)
+VALUES ('admin', '$2a$10$H5T.j9XpkP0R0/dDK3xpwOFrDJyHxE1K7H5T.j9XpkP0R0/dDK3xpw', 'Administrador', 'admin@implanta.com', 'admin');
+
+-- ============ MIGRAÇÃO (banco já existente) ============
+-- Execute estes comandos se o banco já estiver criado:
+-- ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user';
+-- UPDATE usuarios SET role = 'admin' WHERE usuario = 'admin';

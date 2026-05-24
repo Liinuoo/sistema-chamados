@@ -66,7 +66,7 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, usuario, senha, nome FROM usuarios WHERE usuario = $1',
+      'SELECT id, usuario, senha, nome, role FROM usuarios WHERE usuario = $1',
       [usuario]
     );
 
@@ -75,25 +75,131 @@ app.post('/api/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    const senhaValida = (senha === user.senha);
+    const senhaValida = await bcrypt.compare(senha, user.senha);
 
     if (!senhaValida) {
       return res.status(401).json({ erro: 'Usuário ou senha incorretos' });
     }
 
-    // Aqui você pode gerar um JWT se preferir
     res.json({
       sucesso: true,
       token: user.id.toString(),
       usuario: {
         id: user.id,
         usuario: user.usuario,
-        nome: user.nome
+        nome: user.nome,
+        role: user.role
       }
     });
   } catch (erro) {
     console.error('Erro ao fazer login:', erro);
     res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+});
+
+// ============ MIDDLEWARE DE ADMIN ============
+async function verificarAdmin(req, res, next) {
+  try {
+    const result = await pool.query('SELECT role FROM usuarios WHERE id = $1', [req.usuarioId]);
+    if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
+      return res.status(403).json({ erro: 'Acesso negado. Apenas administradores.' });
+    }
+    next();
+  } catch (erro) {
+    res.status(500).json({ erro: 'Erro ao verificar permissões' });
+  }
+}
+
+// ============ ROTAS DE USUÁRIOS ============
+
+// Listar usuários (admin only)
+app.get('/api/usuarios', verificarSessao, verificarAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, usuario, nome, email, role, criado_em FROM usuarios ORDER BY criado_em DESC'
+    );
+    res.json(result.rows);
+  } catch (erro) {
+    console.error('Erro ao listar usuários:', erro);
+    res.status(500).json({ erro: 'Erro ao listar usuários' });
+  }
+});
+
+// Criar usuário (admin only)
+app.post('/api/usuarios', verificarSessao, verificarAdmin, async (req, res) => {
+  const { usuario, senha, nome, email, role } = req.body;
+
+  if (!usuario || !senha || !nome) {
+    return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
+  }
+
+  if (senha.length < 6) {
+    return res.status(400).json({ erro: 'A senha deve ter pelo menos 6 caracteres' });
+  }
+
+  try {
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const result = await pool.query(
+      'INSERT INTO usuarios (usuario, senha, nome, email, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, usuario, nome, email, role',
+      [usuario, senhaHash, nome, email || null, role || 'user']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (erro) {
+    if (erro.code === '23505') {
+      return res.status(400).json({ erro: 'Nome de usuário já existe' });
+    }
+    console.error('Erro ao criar usuário:', erro);
+    res.status(500).json({ erro: 'Erro ao criar usuário' });
+  }
+});
+
+// Deletar usuário (admin only)
+app.delete('/api/usuarios/:id', verificarSessao, verificarAdmin, async (req, res) => {
+  try {
+    if (parseInt(req.params.id) === parseInt(req.usuarioId)) {
+      return res.status(400).json({ erro: 'Não é possível deletar o próprio usuário' });
+    }
+    const result = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Usuário não encontrado' });
+    }
+    res.json({ mensagem: 'Usuário deletado com sucesso' });
+  } catch (erro) {
+    console.error('Erro ao deletar usuário:', erro);
+    res.status(500).json({ erro: 'Erro ao deletar usuário' });
+  }
+});
+
+// Alterar senha (usuário logado)
+app.put('/api/usuarios/senha', verificarSessao, async (req, res) => {
+  const { senhaAtual, novaSenha } = req.body;
+
+  if (!senhaAtual || !novaSenha) {
+    return res.status(400).json({ erro: 'Senha atual e nova senha são obrigatórias' });
+  }
+
+  if (novaSenha.length < 6) {
+    return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres' });
+  }
+
+  try {
+    const result = await pool.query('SELECT senha FROM usuarios WHERE id = $1', [req.usuarioId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Usuário não encontrado' });
+    }
+
+    const senhaValida = await bcrypt.compare(senhaAtual, result.rows[0].senha);
+    if (!senhaValida) {
+      return res.status(400).json({ erro: 'Senha atual incorreta' });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [novaSenhaHash, req.usuarioId]);
+
+    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso' });
+  } catch (erro) {
+    console.error('Erro ao alterar senha:', erro);
+    res.status(500).json({ erro: 'Erro ao alterar senha' });
   }
 });
 
