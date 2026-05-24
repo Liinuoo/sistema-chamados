@@ -7,7 +7,7 @@ let usuarioLogado = null;
 document.addEventListener('DOMContentLoaded', () => {
   const tokenSalvo = localStorage.getItem('token');
   const usuarioSalvo = localStorage.getItem('usuario');
-  
+
   if (tokenSalvo && usuarioSalvo) {
     token = tokenSalvo;
     usuarioLogado = JSON.parse(usuarioSalvo);
@@ -15,11 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
   }
 
-  // Event listeners
   document.getElementById('formLogin').addEventListener('submit', fazerLogin);
   document.getElementById('btnLogout').addEventListener('click', fazerLogout);
   document.getElementById('formNovoChamado').addEventListener('submit', criarChamado);
-  document.getElementById('formEditarChamado').addEventListener('submit', salvarEdicaoChamado);
 });
 
 // ============ AUTENTICAÇÃO ============
@@ -28,26 +26,25 @@ async function fazerLogin(e) {
 
   const usuario = document.getElementById('usuario').value;
   const senha = document.getElementById('senha').value;
-  const mensagemErro = document.getElementById('mensagemErro');
+  const mensagemTroca = document.getElementById('mensagemTroca');
+
+  mensagemTroca.style.display = 'none';
 
   try {
     const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuario, senha })
     });
 
     const dados = await response.json();
 
     if (!response.ok) {
-      mensagemErro.textContent = dados.erro || 'Erro ao fazer login';
-      mensagemErro.style.display = 'block';
+      mensagemTroca.textContent = dados.erro || 'Usuário ou senha incorretos';
+      mensagemTroca.style.display = 'block';
       return;
     }
 
-    // Salvar token e usuário
     token = dados.token;
     usuarioLogado = dados.usuario;
     localStorage.setItem('token', token);
@@ -57,8 +54,8 @@ async function fazerLogin(e) {
     carregarDados();
   } catch (erro) {
     console.error('Erro ao fazer login:', erro);
-    mensagemErro.textContent = 'Erro de conexão';
-    mensagemErro.style.display = 'block';
+    mensagemTroca.textContent = 'Erro de conexão com o servidor';
+    mensagemTroca.style.display = 'block';
   }
 }
 
@@ -67,41 +64,37 @@ function fazerLogout() {
   usuarioLogado = null;
   localStorage.removeItem('token');
   localStorage.removeItem('usuario');
-  
-  document.getElementById('telaLogin').style.display = 'flex';
-  document.getElementById('telaDashboard').style.display = 'none';
+
+  document.getElementById('telalogin').style.display = 'flex';
+  document.getElementById('teladashboard').style.display = 'none';
   document.getElementById('formLogin').reset();
-  document.getElementById('mensagemErro').style.display = 'none';
+  document.getElementById('mensagemTroca').style.display = 'none';
 }
 
 // ============ NAVEGAÇÃO ============
 function mostrarDashboard() {
-  document.getElementById('telaLogin').style.display = 'none';
-  document.getElementById('telaDashboard').style.display = 'flex';
+  document.getElementById('telalogin').style.display = 'none';
+  document.getElementById('teladashboard').style.display = 'flex';
   document.getElementById('nomeUsuario').textContent = usuarioLogado.nome;
 }
 
 function mostrarSecao(secao) {
-  // Esconder todas as seções
   document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
 
-  // Mostrar seção selecionada
   document.getElementById(secao).classList.add('active');
   event.target.classList.add('active');
 
-  // Carregar dados específicos
-  if (secao === 'chamados') {
+  if (secao === 'meus-chamados') {
     carregarChamados();
   } else if (secao === 'dashboard') {
     carregarDados();
   } else if (secao === 'relatorio') {
-    // Preencheer datas padrão (últimos 30 dias)
     const dataFim = new Date();
     const dataInicio = new Date(dataFim.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
     document.getElementById('dataFim').valueAsDate = dataFim;
     document.getElementById('dataInicio').valueAsDate = dataInicio;
+    gerarRelatorio();
   }
 }
 
@@ -113,10 +106,7 @@ async function fazerRequisicao(url, opcoes = {}) {
     ...opcoes.headers
   };
 
-  const response = await fetch(`${API_URL}${url}`, {
-    ...opcoes,
-    headers
-  });
+  const response = await fetch(`${API_URL}${url}`, { ...opcoes, headers });
 
   if (!response.ok) {
     throw new Error(`Erro HTTP: ${response.status}`);
@@ -139,29 +129,16 @@ async function criarChamado(e) {
   try {
     await fazerRequisicao('/chamados', {
       method: 'POST',
-      body: JSON.stringify({
-        empresa,
-        motivo,
-        categoria,
-        prioridade,
-        responsavel,
-        observacoes
-  })
-});
+      body: JSON.stringify({ empresa, motivo, categoria, prioridade, responsavel, observacoes })
+    });
 
-    // Mostrar mensagem de sucesso
     const mensagem = document.getElementById('mensagemSucesso');
     mensagem.textContent = '✅ Chamado registrado com sucesso!';
     mensagem.style.display = 'block';
 
-    // Limpar formulário
     document.getElementById('formNovoChamado').reset();
 
-    // Esconder mensagem após 3 segundos
-    setTimeout(() => {
-      mensagem.style.display = 'none';
-    }, 3000);
-
+    setTimeout(() => { mensagem.style.display = 'none'; }, 3000);
   } catch (erro) {
     console.error('Erro ao criar chamado:', erro);
     alert('Erro ao registrar chamado');
@@ -173,15 +150,16 @@ async function carregarChamados() {
     const status = document.getElementById('filtroStatus')?.value || '';
     const prioridade = document.getElementById('filtroPrioridade')?.value || '';
     const categoria = document.getElementById('filtroCategoria')?.value || '';
+    const empresa = document.getElementById('filtroEmpresa')?.value || '';
 
     let url = '/chamados?';
     if (status) url += `status=${status}&`;
     if (prioridade) url += `prioridade=${prioridade}&`;
-    if (categoria) url += `categoria=${categoria}`;
+    if (categoria) url += `categoria=${categoria}&`;
+    if (empresa) url += `empresa=${empresa}`;
 
     const chamados = await fazerRequisicao(url);
     renderizarChamados(chamados);
-
   } catch (erro) {
     console.error('Erro ao carregar chamados:', erro);
   }
@@ -239,7 +217,7 @@ function renderizarChamados(chamados) {
       ` : ''}
 
       <div class="chamado-acoes">
-        <button class="btn btn-editar" onclick="abrirModal(${chamado.id}, '${chamado.status.replace(/'/g, "\\'")}', '${(chamado.resolucao || '').replace(/'/g, "\\'")}', '${(chamado.responsavel || '').replace(/'/g, "\\'")}', '${(chamado.observacoes || '').replace(/'/g, "\\'")}')" >✏️ Editar</button>
+        <button class="btn btn-editar" onclick="abrirModal(${chamado.id}, '${chamado.status.replace(/'/g, "\\'")}', '${(chamado.resolucao || '').replace(/'/g, "\\'")}', '${(chamado.responsavel || '').replace(/'/g, "\\'")}', '${(chamado.observacoes || '').replace(/'/g, "\\'")}')">✏️ Editar</button>
         <button class="btn btn-deletar" onclick="deletarChamado(${chamado.id})">🗑️ Deletar</button>
       </div>
     </div>
@@ -260,36 +238,25 @@ async function deletarChamado(id) {
 
 // ============ MODAL DE EDIÇÃO ============
 function abrirModal(id, status, resolucao, responsavel, observacoes) {
-  document.getElementById('editarId').value = id;
-  document.getElementById('editarStatus').value = status;
-  document.getElementById('editarResolucao').value = resolucao;
-  document.getElementById('editarResponsavel').value = responsavel;
-  document.getElementById('editarObservacoes').value = observacoes;
-  document.getElementById('modalEditar').style.display = 'flex';
+  document.getElementById('modalChamado').style.display = 'flex';
+  document.getElementById('modalStatus').value = status;
+  document.getElementById('modalResolucao').value = resolucao;
+  document.getElementById('modalChamado').dataset.editarId = id;
 }
 
 function fecharModal() {
-  document.getElementById('modalEditar').style.display = 'none';
+  document.getElementById('modalChamado').style.display = 'none';
 }
 
-async function salvarEdicaoChamado(e) {
-  e.preventDefault();
-
-  const id = document.getElementById('editarId').value;
-  const status = document.getElementById('editarStatus').value;
-  const resolucao = document.getElementById('editarResolucao').value;
-  const responsavel = document.getElementById('editarResponsavel').value;
-  const observacoes = document.getElementById('editarObservacoes').value;
+async function salvarEdicaoChamado() {
+  const id = document.getElementById('modalChamado').dataset.editarId;
+  const status = document.getElementById('modalStatus').value;
+  const resolucao = document.getElementById('modalResolucao').value;
 
   try {
     await fazerRequisicao(`/chamados/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({
-        status,
-        resolucao: resolucao || undefined,
-        responsavel,
-        observacoes
-      })
+      body: JSON.stringify({ status, resolucao: resolucao || undefined })
     });
 
     fecharModal();
@@ -301,9 +268,8 @@ async function salvarEdicaoChamado(e) {
   }
 }
 
-// Fechar modal ao clicar fora
 window.onclick = function(event) {
-  const modal = document.getElementById('modalEditar');
+  const modal = document.getElementById('modalChamado');
   if (event.target === modal) {
     fecharModal();
   }
@@ -312,19 +278,12 @@ window.onclick = function(event) {
 // ============ RELATÓRIOS E ESTATÍSTICAS ============
 async function carregarDados() {
   try {
-    // Carregar relatório geral
     const relatorio = await fazerRequisicao('/relatorio');
-    
+
     document.getElementById('totalChamados').textContent = relatorio.total_chamados || 0;
     document.getElementById('totalResolvidos').textContent = relatorio.total_resolvidos || 0;
     document.getElementById('totalAbertos').textContent = relatorio.total_abertos || 0;
-    document.getElementById('emAndamento').textContent = relatorio.em_andamento || 0;
-    
-    const tempoMedio = relatorio.tempo_medio_resolucao_horas 
-      ? Math.round(relatorio.tempo_medio_resolucao_horas) 
-      : 0;
-    document.getElementById('tempoMedio').textContent = `${tempoMedio} horas`;
-
+    document.getElementById('totalAndamento').textContent = relatorio.em_andamento || 0;
   } catch (erro) {
     console.error('Erro ao carregar dados:', erro);
   }
@@ -341,36 +300,39 @@ async function gerarRelatorio() {
 
     const relatorio = await fazerRequisicao(url);
 
-    document.getElementById('relTotalChamados').textContent = relatorio.total_chamados || 0;
-    document.getElementById('relTotalResolvidos').textContent = relatorio.total_resolvidos || 0;
-    document.getElementById('relTotalAbertos').textContent = relatorio.total_abertos || 0;
-    document.getElementById('relEmAndamento').textContent = relatorio.em_andamento || 0;
+    document.getElementById('relatorioConteudo').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total de Chamados</h3>
+          <div class="numero">${relatorio.total_chamados || 0}</div>
+        </div>
+        <div class="stat-card sucesso">
+          <h3>Resolvidos</h3>
+          <div class="numero sucesso">${relatorio.total_resolvidos || 0}</div>
+        </div>
+        <div class="stat-card alerta">
+          <h3>Abertos</h3>
+          <div class="numero alerta">${relatorio.total_abertos || 0}</div>
+        </div>
+        <div class="stat-card info">
+          <h3>Em Andamento</h3>
+          <div class="numero info">${relatorio.em_andamento || 0}</div>
+        </div>
+      </div>
+    `;
 
-    const tempoMedio = relatorio.tempo_medio_resolucao_horas 
-      ? Math.round(relatorio.tempo_medio_resolucao_horas) 
-      : 0;
-    document.getElementById('relTempoMedio').textContent = `${tempoMedio} horas`;
-
-    // Carregar estatísticas por categoria
     const estatisticas = await fazerRequisicao('/relatorio/categoria');
     renderizarEstatisticas(estatisticas);
-
   } catch (erro) {
     console.error('Erro ao gerar relatório:', erro);
-    alert('Erro ao gerar relatório');
   }
 }
 
 function renderizarEstatisticas(dados) {
-  const tabela = document.getElementById('tabelaCategoria');
-  
-  if (dados.length === 0) {
-    tabela.innerHTML = '<p>Nenhum dado disponível</p>';
-    return;
-  }
+  if (!dados.length) return;
 
   const html = `
-    <table style="width: 100%; border-collapse: collapse;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1.5rem;">
       <thead>
         <tr style="background-color: #667eea; color: white;">
           <th style="padding: 0.75rem; text-align: left; border: 1px solid #ddd;">Categoria</th>
@@ -383,7 +345,7 @@ function renderizarEstatisticas(dados) {
         ${dados.map(d => {
           const taxa = d.total > 0 ? ((d.resolvidos / d.total) * 100).toFixed(1) : 0;
           return `
-            <tr style="border: 1px solid #ddd;">
+            <tr>
               <td style="padding: 0.75rem; border: 1px solid #ddd;">${d.categoria}</td>
               <td style="padding: 0.75rem; text-align: center; border: 1px solid #ddd;">${d.total}</td>
               <td style="padding: 0.75rem; text-align: center; border: 1px solid #ddd;">${d.resolvidos}</td>
@@ -394,13 +356,8 @@ function renderizarEstatisticas(dados) {
       </tbody>
     </table>
   `;
-  
-  tabela.innerHTML = html;
-}
 
-function exportarPDF() {
-  alert('Função de exportação para PDF pode ser implementada com uma biblioteca como jsPDF ou html2pdf');
-  // Aqui você pode integrar uma biblioteca de PDF no futuro
+  document.getElementById('relatorioConteudo').insertAdjacentHTML('beforeend', html);
 }
 
 // ============ FUNÇÕES AUXILIARES ============
