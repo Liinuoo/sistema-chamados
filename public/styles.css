@@ -246,6 +246,18 @@ body {
   background-color: #1e5fa6;
 }
 
+.btn-concluir {
+  background-color: var(--success);
+  color: white;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+}
+
+.btn-concluir:hover {
+  background-color: #1e8449;
+}
+
 .btn-deletar {
   background-color: var(--danger);
   color: white;

@@ -290,11 +290,33 @@ function renderizarChamados(chamados) {
       '<div class="chamado-motivo"><strong>Motivo:</strong><br>' + c.motivo + '</div>' +
       resolucaoHtml +
       '<div class="chamado-acoes">' +
+        (c.status !== 'Resolvido' ? '<button class="btn btn-concluir" onclick="concluirChamado(' + c.id + ')">✅ Concluir</button>' : '') +
         '<button class="btn btn-editar" onclick="abrirModal(' + c.id + ')">✏️ Editar</button>' +
         '<button class="btn btn-deletar" onclick="deletarChamado(' + c.id + ')">🗑️ Deletar</button>' +
       '</div>' +
     '</div>';
   }).join('');
+}
+
+function concluirChamado(id) {
+  var resolucao = prompt('Descreva como o chamado foi resolvido:');
+  if (resolucao === null) return;
+  if (!resolucao.trim()) {
+    alert('A descrição da resolução é obrigatória.');
+    return;
+  }
+
+  fazerRequisicao('/chamados/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'Resolvido', resolucao: resolucao.trim() })
+  })
+  .then(function() {
+    carregarChamados();
+  })
+  .catch(function(erro) {
+    alert('Erro ao concluir chamado: ' + erro.message);
+    console.error(erro);
+  });
 }
 
 function deletarChamado(id) {
