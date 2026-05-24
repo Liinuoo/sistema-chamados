@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Chamados - Implanta</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Tela de Login -->
+  <div id="telaLogin" class="container-login">
+    <div class="login-box">
+      <h1>Sistema de Chamados</h1>
+      <h2>Implanta</h2>
+      <form id="formLogin">
+        <div class="form-group">
+          <label for="usuario">Usuário</label>
+          <input type="text" id="usuario" name="usuario" required>
+        </div>
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" name="senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <div id="mensagemErro" class="erro"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard Principal -->
+  <div id="telaDashboard" class="dashboard" style="display: none;">
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <h2>📋 Sistema de Chamados - Implanta</h2>
+      </div>
+      <div class="navbar-user">
+        <span id="nomeUsuario"></span>
+        <button id="btnLogout" class="btn btn-secondary btn-small">Sair</button>
+      </div>
+    </nav>
+
+    <div class="container-dashboard">
+      <!-- Menu Lateral -->
+      <aside class="sidebar">
+        <button class="menu-item active" onclick="mostrarSecao('dashboard')">📊 Dashboard</button>
+        <button class="menu-item" onclick="mostrarSecao('novo-chamado')">➕ Novo Chamado</button>
+        <button class="menu-item" onclick="mostrarSecao('chamados')">📋 Meus Chamados</button>
+        <button class="menu-item" onclick="mostrarSecao('relatorio')">📈 Relatórios</button>
+      </aside>
+
+      <!-- Conteúdo Principal -->
+      <main class="main-content">
+        
+        <!-- SEÇÃO DASHBOARD -->
+        <section id="dashboard" class="secao active">
+          <h2>Dashboard</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total de Chamados</h3>
+              <p id="totalChamados" class="numero">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Resolvidos</h3>
+              <p id="totalResolvidos" class="numero sucesso">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Em Aberto</h3>
+              <p id="totalAbertos" class="numero alerta">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Em Andamento</h3>
+              <p id="emAndamento" class="numero info">0</p>
+            </div>
+          </div>
+          <div class="stats-extras">
+            <div class="stat-card full">
+              <h3>Tempo Médio de Resolução</h3>
+              <p id="tempoMedio" class="numero">-- horas</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEÇÃO NOVO CHAMADO -->
+        <section id="novo-chamado" class="secao">
+          <h2>Registrar Novo Chamado</h2>
+          <form id="formNovoChamado" class="formulario">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="motivo">Motivo do Chamado *</label>
+                <textarea id="motivo" name="motivo" required rows="4"></textarea>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="categoria">Categoria *</label>
+                <select id="categoria" name="categoria" required>
+                  <option value="">Selecione uma categoria</option>
+                  <option value="Bug">Bug/Erro</option>
+                  <option value="Performance">Performance</option>
+                  <option value="Dados">Erro de Dados</option>
+                  <option value="Integração">Integração</option>
+                  <option value="Interface">Interface</option>
+                  <option value="Segurança">Segurança</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="prioridade">Prioridade *</label>
+                <select id="prioridade" name="prioridade" required>
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média" selected>Média</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Crítica">Crítica</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="responsavel">Responsável</label>
+                <input type="text" id="responsavel" name="responsavel" placeholder="Nome do responsável">
+              </div>
+
+              <div class="form-group">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" rows="3"></textarea>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Registrar Chamado</button>
+            <div id="mensagemSucesso" class="sucesso" style="display: none; margin-top: 1rem;"></div>
+          </form>
+        </section>
+
+        <!-- SEÇÃO CHAMADOS -->
+        <section id="chamados" class="secao">
+          <h2>Meus Chamados</h2>
+          
+          <div class="filtros">
+            <div class="form-group">
+              <label for="filtroStatus">Status</label>
+              <select id="filtroStatus" onchange="carregarChamados()">
+                <option value="">Todos</option>
+                <option value="Aberto">Aberto</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Resolvido">Resolvido</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="filtroPrioridade">Prioridade</label>
+              <select id="filtroPrioridade" onchange="carregarChamados()">
+                <option value="">Todas</option>
+                <option value="Baixa">Baixa</option>
+                <option value="Média">Média</option>
+                <option value="Alta">Alta</option>
+                <option value="Crítica">Crítica</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="filtroCategoria">Categoria</label>
+              <select id="filtroCategoria" onchange="carregarChamados()">
+                <option value="">Todas</option>
+                <option value="Bug">Bug/Erro</option>
+                <option value="Performance">Performance</option>
+                <option value="Dados">Erro de Dados</option>
+                <option value="Integração">Integração</option>
+                <option value="Interface">Interface</option>
+                <option value="Segurança">Segurança</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="listaChamados" class="chamados-lista">
+            <p>Carregando...</p>
+          </div>
+        </section>
+
+        <!-- SEÇÃO RELATÓRIOS -->
+        <section id="relatorio" class="secao">
+          <h2>Relatórios</h2>
+          
+          <div class="filtros">
+            <div class="form-group">
+              <label for="dataInicio">Data Inicial</label>
+              <input type="date" id="dataInicio">
+            </div>
+
+            <div class="form-group">
+              <label for="dataFim">Data Final</label>
+              <input type="date" id="dataFim">
+            </div>
+
+            <button class="btn btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
+            <button class="btn btn-secondary" onclick="exportarPDF()">📥 Exportar PDF</button>
+          </div>
+
+          <div id="relatorioResultado" style="margin-top: 2rem;">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <h3>Total de Chamados</h3>
+                <p id="relTotalChamados" class="numero">-</p>
+              </div>
+              <div class="stat-card">
+                <h3>Resolvidos</h3>
+                <p id="relTotalResolvidos" class="numero sucesso">-</p>
+              </div>
+              <div class="stat-card">
+                <h3>Em Aberto</h3>
+                <p id="relTotalAbertos" class="numero alerta">-</p>
+              </div>
+              <div class="stat-card">
+                <h3>Em Andamento</h3>
+                <p id="relEmAndamento" class="numero info">-</p>
+              </div>
+            </div>
+
+            <div class="stat-card full" style="margin-top: 1rem;">
+              <h3>Tempo Médio de Resolução</h3>
+              <p id="relTempoMedio" class="numero">-</p>
+            </div>
+
+            <div id="estatisticasCategoria" style="margin-top: 2rem;">
+              <h3>Chamados por Categoria</h3>
+              <div id="tabelaCategoria"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal para editar chamado -->
+  <div id="modalEditar" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="fechar" onclick="fecharModal()">&times;</span>
+      <h2>Editar Chamado</h2>
+      <form id="formEditarChamado" class="formulario">
+        <input type="hidden" id="editarId">
+        
+        <div class="form-group">
+          <label for="editarStatus">Status</label>
+          <select id="editarStatus" required>
+            <option value="Aberto">Aberto</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Resolvido">Resolvido</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editarResolucao">Resolução</label>
+          <textarea id="editarResolucao" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editarResponsavel">Responsável</label>
+          <input type="text" id="editarResponsavel">
+        </div>
+
+        <div class="form-group">
+          <label for="editarObservacoes">Observações</label>
+          <textarea id="editarObservacoes" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
