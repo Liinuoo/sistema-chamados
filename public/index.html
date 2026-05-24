@@ -85,6 +85,12 @@
           <h2>Registrar Novo Chamado</h2>
           <form id="formNovoChamado" class="formulario">
             <div class="form-row">
+            <div class="form-group">
+              <label for="empresa">Empresa *</label>
+              <input type="text" id="empresa" name="empresa" placeholder="Digite o nome da empresa (A, B, C...)" required>
+              </div>
+              </div>
+            <div class="form-row">
               <div class="form-group">
                 <label for="motivo">Motivo do Chamado *</label>
                 <textarea id="motivo" name="motivo" required rows="4"></textarea>
@@ -138,10 +144,10 @@
         <section id="chamados" class="secao">
           <h2>Meus Chamados</h2>
           
-          <div class="filtros">
-            <div class="form-group">
-              <label for="filtroStatus">Status</label>
-              <select id="filtroStatus" onchange="carregarChamados()">
+          <div class="form-group">
+            <label for="filtroEmpresa">Empresa</label>
+            <input type="text" id="filtroEmpresa" placeholder="Digite a empresa" onchange="carregarChamados()">
+          </div>
                 <option value="">Todos</option>
                 <option value="Aberto">Aberto</option>
                 <option value="Em Andamento">Em Andamento</option>

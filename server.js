@@ -166,9 +166,9 @@ app.get('/api/chamados/:id', verificarSessao, async (req, res) => {
 
 // Criar novo chamado
 app.post('/api/chamados', verificarSessao, async (req, res) => {
-  const { motivo, categoria, prioridade, responsavel, observacoes } = req.body;
+  const { empresa, motivo, categoria, prioridade, responsavel, observacoes } = req.body;
 
-  if (!motivo || !categoria || !prioridade) {
+  if (!empresa || !motivo || !categoria || !prioridade) {
     return res.status(400).json({ erro: 'Motivo, categoria e prioridade são obrigatórios' });
   }
 
@@ -176,11 +176,10 @@ app.post('/api/chamados', verificarSessao, async (req, res) => {
     // Gerar número do chamado
     const numeroChamado = `CH-${Date.now()}`;
 
-    const result = await pool.query(
-      `INSERT INTO chamados (numero_chamado, data_abertura, motivo, categoria, prioridade, responsavel, observacoes, usuario_id, status)
-       VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, 'Aberto')
-       RETURNING *`,
-      [numeroChamado, motivo, categoria, prioridade, responsavel || null, observacoes || null, req.usuarioId]
+    `INSERT INTO chamados (numero_chamado, data_abertura, motivo, categoria, prioridade, responsavel, observacoes, empresa, usuario_id, status)
+VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, 'Aberto')
+RETURNING *`,
+[numeroChamado, motivo, categoria, prioridade, responsavel || null, observacoes || null, empresa || null, req.usuarioId]
     );
 
     res.status(201).json(result.rows[0]);

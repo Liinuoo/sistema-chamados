@@ -129,6 +129,7 @@ async function fazerRequisicao(url, opcoes = {}) {
 async function criarChamado(e) {
   e.preventDefault();
 
+  const empresa = document.getElementById('empresa').value;
   const motivo = document.getElementById('motivo').value;
   const categoria = document.getElementById('categoria').value;
   const prioridade = document.getElementById('prioridade').value;
@@ -139,13 +140,14 @@ async function criarChamado(e) {
     await fazerRequisicao('/chamados', {
       method: 'POST',
       body: JSON.stringify({
+        empresa,
         motivo,
         categoria,
         prioridade,
         responsavel,
         observacoes
-      })
-    });
+  })
+});
 
     // Mostrar mensagem de sucesso
     const mensagem = document.getElementById('mensagemSucesso');
