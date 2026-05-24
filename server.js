@@ -75,7 +75,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    const senhaValida = await bcrypt.compare(senha, user.senha);
+    const senhaValida = (senha === user.senha);
 
     if (!senhaValida) {
       return res.status(401).json({ erro: 'Usuário ou senha incorretos' });
